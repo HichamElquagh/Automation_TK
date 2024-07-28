@@ -48,7 +48,7 @@ def set_cookies_extentions (driver):
          
      
 # Select a proxy randomly
-proxy = proxies[6].strip()
+proxy = proxies[0].strip()
 
 # Extract proxy details
 proxy_parts = proxy.split(':')
@@ -62,8 +62,10 @@ else:
 # Set selenium-wire options to use the proxy
 seleniumwire_options = {
     "proxy": {
+        "http":  f"http://{proxy_user}:{proxy_pass}@{proxy_host}:{proxy_port}",
         "https":  f"https://{proxy_user}:{proxy_pass}@{proxy_host}:{proxy_port}",
-        "http":  f"http://{proxy_user}:{proxy_pass}@{proxy_host}:{proxy_port}"
+        'no_proxy': 'localhost,127.0.0.1'  # Bypass proxy for localhost
+
     },
 }
 
@@ -83,7 +85,8 @@ def open_browser_instance(instance_id):
     
     # Navigate to the target webpage
     try:
-        # set_cookies_extentions(driver)
+        time.sleep(10)
+        set_cookies_extentions(driver)
         time.sleep(50)
 
     except Exception as e:
@@ -97,7 +100,7 @@ def open_browser_instance(instance_id):
 threads = []
 
 # Create and start 4 threads for browser instances
-for i in range(1):
+for i in range(4):
     thread = threading.Thread(target=open_browser_instance, args=(i+1,))
     threads.append(thread)
     thread.start()
