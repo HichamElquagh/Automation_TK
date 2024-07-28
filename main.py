@@ -1,59 +1,88 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
+# hicham code
+import logging
 import time
-import os
-import json
+import threading
+from seleniumwire import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.by import By
 
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
 
-# Set the path to the J2TEAM extension
-extension_path = 'J2TEAM-Cookies-Chrome-Web-Store.crx'
+# Read proxies from file
+proxy_file_path = 'proxy/PROXY.txt'
+with open(proxy_file_path, 'r') as file:
+    proxies = file.readlines()
 
-# Set the path to the cookies directory
-cookies_directory = 'cookies'
+# Select the first proxy from the list
+if proxies:
+    for proxy in proxies:
+        proxy = proxy.strip()
+        if proxy:
+            break   
+    logging.info(f"Selected proxy: {proxy}") 
+else:
+    logging.error("No proxies found in the file.")
+    raise Exception("No proxies found in the file.")
 
-# Set the phone numbers to import
-phone_numbers = ['1234567890', '9876543210']
+# Extract proxy details
+proxy_parts = proxy.split(':')
+if len(proxy_parts) == 4:
+    proxy_host, proxy_port, proxy_user, proxy_pass = proxy_parts
+else:
+    logging.error("Proxy format is incorrect. Expected format: host:port:user:pass")
+    raise Exception("Proxy format is incorrect. Expected format: host:port:user:pass")
 
-# Set the path to the ChromeDriver executable
-chromedriver_path = 'chromedriver.exe'
+# Construct the proxy URL
+proxy_url = f"http://{proxy_user}:{proxy_pass}@{proxy_host}:{proxy_port}"
+logging.debug(f"Proxy URL: {proxy_url}")
 
-# Set the path to the ChromeDriver executable in ChromeOptions
-chrome_options = Options()
-#chrome_options.add_argument("--headless")  # Run Chrome in headless mode (without opening a browser window)
-chrome_options.add_argument(f"webdriver.chrome.driver={chromedriver_path}")
-chrome_options.add_extension(extension_path)
+# Set selenium-wire options to use the proxy
+seleniumwire_options = {
+    "proxy": {
+        "http": proxy_url,
+        "https": proxy_url
+    },
+}
 
+# Set Chrome options to run in headless mode
+options = Options()
+# options.add_argument("--headless=new")
 
-# Initialize Chrome WebDriver with the specified options
-driver = webdriver.Chrome(options=chrome_options)
+def open_browser_instance(instance_id):
+    # Initialize the Chrome driver with service, selenium-wire options, and chrome options
+    driver = webdriver.Chrome(
+        service=Service(ChromeDriverManager().install()),
+        seleniumwire_options=seleniumwire_options,
+        options=options
+    )
+    
+    # Navigate to the target webpage
+    try:
+        driver.get("https://tiktok.com")
+        time.sleep(50)
+        logging.info(f"Browser instance {instance_id} successfully navigated to https://tiktok.com")
+    except Exception as e:
+        logging.error(f"Error navigating to https://tiktok.com in browser instance {instance_id}: {e}")
+    finally:
+        # Close the driver
+        driver.quit()
+        logging.info(f"Browser instance {instance_id} closed.")
 
-# Navigate to a URL (example: Google)
-driver.get('https://www.google.com')
+# List to store threads
+threads = []
 
-time.sleep(5)
-# Clear all cookies
-driver.delete_all_cookies()
+# Create and start 4 threads for browser instances
+for i in range(1):
+    thread = threading.Thread(target=open_browser_instance, args=(i+1,))
+    threads.append(thread)
+    thread.start()
 
-# Load the TikTok login page
-driver.get('https://www.tiktok.com/login')
+# Wait for all threads to complete
+for thread in threads:
+    thread.join()
 
+# hicham code
 
-
-# Import cookies from the cookies directory
-for cookie_file in os.listdir(cookies_directory):
-    with open(os.path.join(cookies_directory, cookie_file), 'r') as f:
-        cookie_data = json.load(f)
-        driver.add_cookie(cookie_data)
-
-# # Refresh the page to apply the imported cookies
-# driver.refresh()
-
-# Handle the phone number input
-phone_input = driver.find_element_by_id('phone-input')
-for phone_number in phone_numbers:
-    phone_input.send_keys(phone_number)
-    # Handle any other necessary steps here, such as clicking a button to submit the phone number
-
-# Close the browser
-driver.quit()
