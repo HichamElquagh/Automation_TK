@@ -5,11 +5,13 @@ import threading
 from seleniumwire import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+# from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.chrome import ChromeDriverManager
+
 from selenium.webdriver.common.by import By
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 extention_path  = 'J2TEAM-Cookies-Chrome-Web-Store.crx'
 
 def read_file(file_path):
@@ -55,7 +57,7 @@ proxy_parts = proxy.split(':')
 if len(proxy_parts) == 4:
     proxy_host, proxy_port, proxy_user, proxy_pass = proxy_parts
 else:
-    logging.error("Proxy format is incorrect. Expected format: host:port:user:pass")
+    # logging.error("Proxy format is incorrect. Expected format: host:port:user:pass")
     raise Exception("Proxy format is incorrect. Expected format: host:port:user:pass")
 
 
@@ -75,9 +77,16 @@ options.add_extension(extention_path)
 
 
 def open_browser_instance(instance_id):
+    chrome_driver_path = ChromeDriverManager().install()
+    service = Service(chrome_driver_path)
+
+
+    # chrome_driver_path = r'C:\Users\alqua\Desktop\Automation_TK\chromedriver.exe'
+    # service = Service(chrome_driver_path)
+
     # Initialize the Chrome driver with service, selenium-wire options, and chrome options
     driver = webdriver.Chrome(
-        service=Service(ChromeDriverManager().install()),
+        service=service,
         seleniumwire_options=seleniumwire_options,
         options=options,
 
@@ -100,7 +109,7 @@ def open_browser_instance(instance_id):
 threads = []
 
 # Create and start 4 threads for browser instances
-for i in range(4):
+for i in range(1):
     thread = threading.Thread(target=open_browser_instance, args=(i+1,))
     threads.append(thread)
     thread.start()
